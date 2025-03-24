@@ -97,53 +97,54 @@ public class SlotBindingMod {
             mc.thePlayer.addChatMessage(new ChatComponentText(message));
         }
     }
-    @SubscribeEvent
-    public void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
-        
-        if (previousSlot != null && bindingKeybind.getKeyCode() != 0 && !Keyboard.isKeyDown(bindingKeybind.getKeyCode())) {
-            previousSlot = null;
-        }
+@SubscribeEvent
+public void onClientTick(TickEvent.ClientTickEvent event) {
+    if (event.phase != TickEvent.Phase.END) return;
+    
+    if (previousSlot != null && 
+        (bindingKeybind.getKeyCode() == 0 || !Keyboard.isKeyDown(bindingKeybind.getKeyCode()))) {
+        previousSlot = null;
     }
+}
 
-    @SubscribeEvent
-    public void onMouseInput(GuiScreenEvent.MouseInputEvent.Pre event) {
-        if (!(event.gui instanceof GuiInventory)) {
+@SubscribeEvent
+public void onMouseInput(GuiScreenEvent.MouseInputEvent.Pre event) {
+    if (!(event.gui instanceof GuiInventory)) {
+        return;
+    }
+    
+    if (!Mouse.getEventButtonState() || Mouse.getEventButton() != 0) {
+        return;
+    }
+    
+    GuiInventory gui = (GuiInventory) event.gui;
+    Slot slotUnderMouse = getSlotUnderMouse(gui);
+    
+    if (slotUnderMouse == null || slotUnderMouse.slotNumber < 5) {
+        return;
+    }
+    
+    int slotNumber = slotUnderMouse.slotNumber;
+    
+    if (Keyboard.isKeyDown(Keyboard.KEY_LSHIFT)) {
+        if (slotBindings.containsKey(slotNumber)) {
+            event.setCanceled(true);
+            handleShiftClick(slotNumber);
             return;
         }
-        
-        if (!Mouse.getEventButtonState() || Mouse.getEventButton() != 0) {
+        if (reverseBindings.containsKey(slotNumber)) {
+            event.setCanceled(true);
+            handleReverseShiftClick(slotNumber);
             return;
         }
-        
-        GuiInventory gui = (GuiInventory) event.gui;
-        Slot slotUnderMouse = getSlotUnderMouse(gui);
-        
-        if (slotUnderMouse == null || slotUnderMouse.slotNumber < 5) {
-            return;
-        }
-        
-        int slotNumber = slotUnderMouse.slotNumber;
-        
-        if (Keyboard.isKeyDown(Keyboard.KEY_LSHIFT)) {
-            if (slotBindings.containsKey(slotNumber)) {
-                event.setCanceled(true);
-                handleShiftClick(slotNumber);
-                return;
-            }
-            if (reverseBindings.containsKey(slotNumber)) {
-                event.setCanceled(true);
-                handleReverseShiftClick(slotNumber);
-                return;
-            }
-            return;
-        }
-        
-        if (bindingKeybind.getKeyCode() != 0 && !Keyboard.isKeyDown(bindingKeybind.getKeyCode())) {
-            return;
-        }
-        
-        event.setCanceled(true);
+        return;
+    }
+    
+    if (bindingKeybind.getKeyCode() == 0 || !Keyboard.isKeyDown(bindingKeybind.getKeyCode())) {
+        return;
+    }
+    
+    event.setCanceled(true);
         
         // Check if clicking on an already bound slot
         if (previousSlot == null && slotBindings.containsKey(slotNumber)) {
